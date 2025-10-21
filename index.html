@@ -292,6 +292,116 @@
             background: #007bff;
         }
 
+        /* 登录表单样式 */
+        .login-form {
+            padding: 1.5rem 0;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .forgot-password {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+
+        .login-submit {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .google-login {
+            width: 100%;
+            background: #4285f4;
+            color: white;
+        }
+
+        .google-login:hover {
+            background: #357ae8;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 1rem 0;
+            position: relative;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #ddd;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 1rem;
+            position: relative;
+        }
+
+        .modal-actions {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -301,6 +411,39 @@
                 transform: translateX(0);
                 opacity: 1;
             }
+        }
+
+        /* 模态框样式 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: #333;
+            font-size: 1.5rem;
         }
 
         /* 移动端响应式 */
@@ -339,6 +482,11 @@
             .btn {
                 font-size: 0.8rem;
                 padding: 0.4rem 0.8rem;
+            }
+
+            .modal-content {
+                margin: 0.5rem;
+                padding: 1.5rem;
             }
         }
 
@@ -382,6 +530,37 @@
             .status-info {
                 color: #ccc;
             }
+
+            /* 深色模式登录表单 */
+            .form-group label {
+                color: #fff;
+            }
+
+            .form-input {
+                background: #404040;
+                border-color: #555;
+                color: #fff;
+            }
+
+            .checkbox-label {
+                color: #ccc;
+            }
+
+            .divider {
+                color: #ccc;
+            }
+
+            .divider::before {
+                background: #555;
+            }
+
+            .divider span {
+                background: #2d2d2d;
+            }
+
+            .modal-actions {
+                border-top-color: #404040;
+            }
         }
     </style>
 </head>
@@ -403,6 +582,12 @@
                 </button>
                 <button class="btn btn-secondary" onclick="exportNotes()">
                     <span>📥</span> 导出
+                </button>
+                <button class="btn btn-secondary" onclick="showLogin()" id="login-btn">
+                    <span>🔐</span> 登录
+                </button>
+                <button class="btn btn-secondary" onclick="logout()" id="logout-btn" style="display: none;">
+                    <span>🔓</span> 登出
                 </button>
             </div>
         </header>
@@ -441,6 +626,61 @@
                 Team Note Pro - 安全版本
             </div>
         </footer>
+    </div>
+
+    <!-- 登录模态框 -->
+    <div id="login-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>🔐 登录账号</h3>
+            <div class="login-form">
+                <div class="form-group">
+                    <label for="login-email">邮箱地址</label>
+                    <input type="email" id="login-email" placeholder="请输入邮箱" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">密码</label>
+                    <input type="password" id="login-password" placeholder="请输入密码" class="form-input">
+                </div>
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="remember-me">
+                        <span>记住我</span>
+                    </label>
+                    <a href="#" onclick="showResetPassword()" class="forgot-password">忘记密码？</a>
+                </div>
+                <button class="btn btn-primary login-submit" onclick="doLogin()">
+                    🔐 登录
+                </button>
+                <div class="divider">
+                    <span>或</span>
+                </div>
+                <button class="btn btn-secondary google-login" onclick="doGoogleLogin()">
+                    🔍 使用 Google 登录
+                </button>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="hideLogin()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重置密码模态框 -->
+    <div id="reset-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>🔄 重置密码</h3>
+            <div class="login-form">
+                <div class="form-group">
+                    <label for="reset-email">邮箱地址</label>
+                    <input type="email" id="reset-email" placeholder="请输入注册邮箱" class="form-input">
+                </div>
+                <button class="btn btn-primary" onclick="doResetPassword()">
+                    📧 发送重置邮件
+                </button>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="hideResetPassword()">取消</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -747,6 +987,187 @@
                 div.textContent = text;
                 return div.innerHTML;
             }
+
+            // 登录功能
+            showLogin() {
+                const modal = document.getElementById('login-modal');
+                modal.style.display = 'block';
+                // 清空输入框
+                document.getElementById('login-email').value = '';
+                document.getElementById('login-password').value = '';
+                // 聚焦到邮箱输入框
+                setTimeout(() => {
+                    document.getElementById('login-email').focus();
+                }, 100);
+            }
+
+            hideLogin() {
+                document.getElementById('login-modal').style.display = 'none';
+            }
+
+            showResetPassword() {
+                hideLogin();
+                const modal = document.getElementById('reset-modal');
+                modal.style.display = 'block';
+                document.getElementById('reset-email').value = '';
+                setTimeout(() => {
+                    document.getElementById('reset-email').focus();
+                }, 100);
+            }
+
+            hideResetPassword() {
+                document.getElementById('reset-modal').style.display = 'none';
+            }
+
+            doLogin() {
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+                const rememberMe = document.getElementById('remember-me').checked;
+
+                // 简单的验证
+                if (!email) {
+                    this.showMessage('请输入邮箱地址', 'error');
+                    return;
+                }
+
+                if (!password) {
+                    this.showMessage('请输入密码', 'error');
+                    return;
+                }
+
+                // 邮箱格式验证
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    this.showMessage('请输入有效的邮箱地址', 'error');
+                    return;
+                }
+
+                // 模拟登录过程
+                this.showMessage('正在登录...', 'info');
+
+                // 模拟网络请求
+                setTimeout(() => {
+                    // 这里模拟登录成功
+                    this.currentUser = {
+                        email: email,
+                        username: email.split('@')[0],
+                        loginTime: new Date().toISOString()
+                    };
+
+                    // 保存登录状态
+                    if (rememberMe) {
+                        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                    }
+
+                    // 更新UI
+                    this.updateLoginUI();
+
+                    // 隐藏登录框
+                    hideLogin();
+
+                    // 显示成功消息
+                    this.showMessage(`欢迎回来，${this.currentUser.username}！`, 'success');
+                    console.log('✅ 用户登录成功:', this.currentUser);
+
+                }, 1500);
+            }
+
+            doGoogleLogin() {
+                this.showMessage('正在跳转到 Google 登录...', 'info');
+
+                // 模拟 Google 登录
+                setTimeout(() => {
+                    this.currentUser = {
+                        email: 'user@gmail.com',
+                        username: 'Google用户',
+                        loginTime: new Date().toISOString(),
+                        provider: 'google'
+                    };
+
+                    localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                    this.updateLoginUI();
+                    hideLogin();
+
+                    this.showMessage('Google 登录成功！', 'success');
+                    console.log('✅ Google 登录成功:', this.currentUser);
+                }, 1000);
+            }
+
+            doResetPassword() {
+                const email = document.getElementById('reset-email').value.trim();
+
+                if (!email) {
+                    this.showMessage('请输入邮箱地址', 'error');
+                    return;
+                }
+
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    this.showMessage('请输入有效的邮箱地址', 'error');
+                    return;
+                }
+
+                this.showMessage('正在发送重置邮件...', 'info');
+
+                setTimeout(() => {
+                    this.showMessage(`重置密码邮件已发送到 ${email}`, 'success');
+                    hideResetPassword();
+                }, 1500);
+            }
+
+            logout() {
+                if (this.currentUser) {
+                    if (confirm('确定要退出登录吗？')) {
+                        this.currentUser = null;
+                        localStorage.removeItem('currentUser');
+                        this.updateLoginUI();
+                        this.showMessage('已退出登录', 'info');
+                        console.log('✅ 用户已登出');
+                    }
+                }
+            }
+
+            updateLoginUI() {
+                const loginBtn = document.getElementById('login-btn');
+                const logoutBtn = document.getElementById('logout-btn');
+                const footer = document.querySelector('.footer div:last-child');
+
+                if (this.currentUser) {
+                    // 用户已登录
+                    loginBtn.style.display = 'none';
+                    logoutBtn.style.display = 'inline-flex';
+
+                    // 更新底部信息
+                    if (footer) {
+                        footer.innerHTML = `欢迎，${this.currentUser.username} | Team Note Pro`;
+                    }
+
+                } else {
+                    // 用户未登录
+                    loginBtn.style.display = 'inline-flex';
+                    logoutBtn.style.display = 'none';
+
+                    // 恢复底部信息
+                    if (footer) {
+                        footer.innerHTML = 'Team Note Pro - 安全版本';
+                    }
+                }
+            }
+
+            // 页面加载时检查登录状态
+            checkLoginStatus() {
+                const savedUser = localStorage.getItem('currentUser');
+                if (savedUser) {
+                    try {
+                        this.currentUser = JSON.parse(savedUser);
+                        this.updateLoginUI();
+                        console.log('✅ 自动登录成功:', this.currentUser);
+                    } catch (error) {
+                        console.warn('⚠️ 登录数据损坏，清除保存的登录状态');
+                        localStorage.removeItem('currentUser');
+                    }
+                }
+            }
         }
 
         // 全局应用实例
@@ -773,11 +1194,46 @@
             if (app) app.searchNotes(query);
         }
 
+        // 登录相关全局函数
+        function showLogin() {
+            if (app) app.showLogin();
+        }
+
+        function hideLogin() {
+            if (app) app.hideLogin();
+        }
+
+        function showResetPassword() {
+            if (app) app.showResetPassword();
+        }
+
+        function hideResetPassword() {
+            if (app) app.hideResetPassword();
+        }
+
+        function doLogin() {
+            if (app) app.doLogin();
+        }
+
+        function doGoogleLogin() {
+            if (app) app.doGoogleLogin();
+        }
+
+        function doResetPassword() {
+            if (app) app.doResetPassword();
+        }
+
+        function logout() {
+            if (app) app.logout();
+        }
+
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {
             console.log('📱 安全笔记应用页面加载完成');
             try {
                 app = new SecureNoteApp();
+                // 检查登录状态
+                app.checkLoginStatus();
                 console.log('🎉 应用启动成功');
             } catch (error) {
                 console.error('❌ 应用启动失败:', error);
