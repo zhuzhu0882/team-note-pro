@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主应用诊断 - Team Note Pro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .diagnostic-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Team Note Pro 主应用诊断</h1>
+
+    <div class="diagnostic-section">
+        <h2>📁 文件加载检查</h2>
+        <div id="file-check"></div>
+        <button onclick="checkFiles()">重新检查文件</button>
+    </div>
+
+    <div class="diagnostic-section">
+        <h2>🔥 Firebase 连接检查</h2>
+        <div id="firebase-check"></div>
+        <button onclick="checkFirebase()">检查 Firebase</button>
+    </div>
+
+    <div class="diagnostic-section">
+        <h2>📱 JavaScript 加载检查</h2>
+        <div id="js-check"></div>
+        <button onclick="checkJavaScript()">检查 JavaScript</button>
+    </div>
+
+    <div class="diagnostic-section">
+        <h2>🎨 CSS 样式检查</h2>
+        <div id="css-check"></div>
+        <button onclick="checkCSS()">检查 CSS</button>
+    </div>
+
+    <div class="diagnostic-section">
+        <h2>🔧 尝试加载主应用</h2>
+        <div id="app-load-check"></div>
+        <button onclick="loadMainApp()">尝试加载主应用</button>
+    </div>
+
+    <div class="diagnostic-section">
+        <h2>📄 实时日志</h2>
+        <button onclick="clearLog()">清除日志</button>
+        <div id="log" class="log"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+
+    <script>
+        let logContainer = document.getElementById('log');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = `[${timestamp}] ${message}`;
+            logContainer.textContent += entry + '\n';
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(entry);
+        }
+
+        function clearLog() {
+            logContainer.textContent = '';
+        }
+
+        function updateSection(sectionId, content, type = 'info') {
+            const section = document.getElementById(sectionId);
+            section.innerHTML = `<div class="status ${type}">${content}</div>`;
+        }
+
+        // 检查文件加载
+        function checkFiles() {
+            log('开始检查文件加载...');
+
+            const files = [
+                'css/style.css',
+                'mobile-fix.css',
+                'js/firebase-config.js',
+                'js/storage-firebase.js',
+                'js/app-firebase.js'
+            ];
+
+            let results = [];
+            let completed = 0;
+
+            files.forEach(file => {
+                fetch(file, { method: 'HEAD' })
+                    .then(response => {
+                        completed++;
+                        const status = response.ok ? '✅' : '❌';
+                        results.push(`${status} ${file} (${response.status})`);
+
+                        if (completed === files.length) {
+                            updateSection('file-check', results.join('<br>'),
+                                results.some(r => r.includes('❌')) ? 'error' : 'success');
+                            log('文件检查完成');
+                        }
+                    })
+                    .catch(error => {
+                        completed++;
+                        results.push(`❌ ${file} (加载失败: ${error.message})`);
+
+                        if (completed === files.length) {
+                            updateSection('file-check', results.join('<br>'), 'error');
+                            log('文件检查完成，有错误');
+                        }
+                    });
+            });
+        }
+
+        // 检查 Firebase
+        function checkFirebase() {
+            log('开始检查 Firebase...');
+
+            try {
+                if (typeof firebase === 'undefined') {
+                    updateSection('firebase-check', '❌ Firebase SDK 未加载', 'error');
+                    log('Firebase SDK 未加载');
+                    return;
+                }
+
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCiUK6B4HCSHD3jGpcfRwbd81RxEtCO-l4",
+                    authDomain: "team-note-pro.firebaseapp.com",
+                    projectId: "team-note-pro",
+                    storageBucket: "team-note-pro.appspot.com",
+                    messagingSenderId: "475394331627",
+                    appId: "1:475394331627:web:placeholder_app_id"
+                };
+
+                firebase.initializeApp(firebaseConfig);
+
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+
+                updateSection('firebase-check',
+                    '✅ Firebase SDK 已加载<br>✅ Firebase 初始化成功<br>✅ Auth 服务可用<br>✅ Firestore 服务可用',
+                    'success');
+
+                log('Firebase 检查成功');
+
+                // 测试数据库连接
+                db.collection('test').doc('diagnostic').set({
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    test: 'diagnostic-test'
+                }).then(() => {
+                    log('✅ Firestore 写入测试成功');
+                    return db.collection('test').doc('diagnostic').delete();
+                }).then(() => {
+                    log('✅ Firestore 连接测试完成');
+                }).catch(error => {
+                    log(`❌ Firestore 测试失败: ${error.message}`);
+                });
+
+            } catch (error) {
+                updateSection('firebase-check', `❌ Firebase 初始化失败: ${error.message}`, 'error');
+                log(`Firebase 初始化失败: ${error.message}`);
+            }
+        }
+
+        // 检查 JavaScript
+        function checkJavaScript() {
+            log('开始检查 JavaScript 文件...');
+
+            const scripts = [
+                'js/firebase-config.js',
+                'js/storage-firebase.js',
+                'js/app-firebase.js'
+            ];
+
+            let results = [];
+            let loadedCount = 0;
+
+            scripts.forEach(script => {
+                const scriptElement = document.createElement('script');
+                scriptElement.src = script;
+
+                scriptElement.onload = () => {
+                    loadedCount++;
+                    results.push(`✅ ${script} 加载成功`);
+
+                    if (loadedCount === scripts.length) {
+                        updateSection('js-check', results.join('<br>'), 'success');
+                        log('JavaScript 文件检查完成');
+
+                        // 检查全局对象
+                        setTimeout(() => {
+                            if (window.FirebaseUtils) {
+                                log('✅ FirebaseUtils 全局对象可用');
+                            } else {
+                                log('❌ FirebaseUtils 全局对象不可用');
+                            }
+
+                            if (window.noteApp) {
+                                log('✅ noteApp 全局对象可用');
+                            } else {
+                                log('❌ noteApp 全局对象不可用');
+                            }
+                        }, 1000);
+                    }
+                };
+
+                scriptElement.onerror = () => {
+                    loadedCount++;
+                    results.push(`❌ ${script} 加载失败`);
+
+                    if (loadedCount === scripts.length) {
+                        updateSection('js-check', results.join('<br>'), 'error');
+                        log('JavaScript 文件检查完成，有错误');
+                    }
+                };
+
+                document.head.appendChild(scriptElement);
+            });
+        }
+
+        // 检查 CSS
+        function checkCSS() {
+            log('开始检查 CSS 文件...');
+
+            const links = [
+                'css/style.css',
+                'mobile-fix.css'
+            ];
+
+            let results = [];
+            let completed = 0;
+
+            links.forEach(css => {
+                fetch(css)
+                    .then(response => {
+                        completed++;
+                        const status = response.ok ? '✅' : '❌';
+                        results.push(`${status} ${css} (${response.status}, ${response.headers.get('content-length')} bytes)`);
+
+                        if (completed === links.length) {
+                            updateSection('css-check', results.join('<br>'),
+                                results.some(r => r.includes('❌')) ? 'error' : 'success');
+                            log('CSS 检查完成');
+                        }
+                    })
+                    .catch(error => {
+                        completed++;
+                        results.push(`❌ ${css} (加载失败: ${error.message})`);
+
+                        if (completed === links.length) {
+                            updateSection('css-check', results.join('<br>'), 'error');
+                            log('CSS 检查完成，有错误');
+                        }
+                    });
+            });
+        }
+
+        // 尝试加载主应用
+        function loadMainApp() {
+            log('尝试加载主应用...');
+
+            // 检查是否已经有主应用的HTML结构
+            fetch('index.html')
+                .then(response => response.text())
+                .then(html => {
+                    if (html.includes('我的笔记 - Team Note Pro')) {
+                        updateSection('app-load-check',
+                            '✅ 主应用 HTML 文件可访问<br>🔄 尝试在当前页面加载主应用...',
+                            'info');
+
+                        // 创建一个iframe来测试主应用
+                        const iframe = document.createElement('iframe');
+                        iframe.src = 'index.html';
+                        iframe.style.width = '100%';
+                        iframe.style.height = '500px';
+                        iframe.style.border = '1px solid #ddd';
+                        iframe.style.borderRadius = '8px';
+
+                        const container = document.getElementById('app-load-check');
+                        container.innerHTML = '<h3>主应用预览：</h3>';
+                        container.appendChild(iframe);
+
+                        log('主应用 iframe 已创建');
+                    } else {
+                        updateSection('app-load-check', '❌ 主应用 HTML 文件内容异常', 'error');
+                        log('主应用 HTML 内容异常');
+                    }
+                })
+                .catch(error => {
+                    updateSection('app-load-check', `❌ 无法加载主应用 HTML: ${error.message}`, 'error');
+                    log(`无法加载主应用: ${error.message}`);
+                });
+        }
+
+        // 页面加载完成后自动运行基础检查
+        window.addEventListener('load', () => {
+            log('诊断页面加载完成');
+            log('开始自动诊断...');
+
+            setTimeout(() => {
+                checkFiles();
+            }, 500);
+
+            setTimeout(() => {
+                checkFirebase();
+            }, 1000);
+
+            setTimeout(() => {
+                checkCSS();
+            }, 1500);
+        });
+
+        // 错误监听
+        window.addEventListener('error', (e) => {
+            log(`❌ 页面错误: ${e.error.message} at ${e.filename}:${e.lineno}`);
+        });
+
+        window.addEventListener('unhandledrejection', (e) => {
+            log(`❌ Promise 错误: ${e.reason}`);
+        });
+    </script>
+</body>
+</html>

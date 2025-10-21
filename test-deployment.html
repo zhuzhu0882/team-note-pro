@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>部署测试 - Team Note Pro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Team Note Pro 部署测试</h1>
+
+    <div class="info">
+        <strong>测试说明：</strong> 这个页面用于测试应用部署后的功能是否正常
+    </div>
+
+    <div style="margin: 20px 0;">
+        <button onclick="testFirebaseConnection()">测试 Firebase 连接</button>
+        <button onclick="testUserAuth()">测试用户认证</button>
+        <button onclick="testFirestore()">测试 Firestore 数据库</button>
+        <button onclick="testAppLoading()">测试应用加载</button>
+        <button onclick="clearResults()">清除结果</button>
+    </div>
+
+    <div id="results">
+        <div class="info">
+            <strong>准备就绪！</strong> 点击上面的按钮开始测试...
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            addResult('测试结果已清除', 'info');
+        }
+
+        function testFirebaseConnection() {
+            addResult('开始测试 Firebase 连接...', 'info');
+
+            try {
+                // 测试 Firebase 初始化
+                if (typeof firebase !== 'undefined') {
+                    addResult('✅ Firebase SDK 加载成功', 'success');
+
+                    // 测试项目配置
+                    const projectId = firebase.app().options.projectId;
+                    if (projectId === 'team-note-pro') {
+                        addResult(`✅ 项目配置正确: ${projectId}`, 'success');
+                    } else {
+                        addResult(`❌ 项目配置错误: ${projectId}`, 'error');
+                    }
+
+                    // 测试服务初始化
+                    const auth = firebase.auth();
+                    const db = firebase.firestore();
+                    const storage = firebase.storage();
+
+                    addResult('✅ Firebase 服务初始化成功', 'success');
+                    addResult(`✅ Auth 服务: ${typeof auth}`, 'success');
+                    addResult(`✅ Firestore 服务: ${typeof db}`, 'success');
+                    addResult(`✅ Storage 服务: ${typeof storage}`, 'success');
+
+                } else {
+                    addResult('❌ Firebase SDK 未加载', 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Firebase 连接测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testUserAuth() {
+            addResult('开始测试用户认证...', 'info');
+
+            try {
+                const auth = firebase.auth();
+
+                // 测试当前用户状态
+                const user = auth.currentUser;
+                if (user) {
+                    addResult(`✅ 用户已登录: ${user.email}`, 'success');
+                } else {
+                    addResult('ℹ️ 当前未登录（这是正常的）', 'info');
+                }
+
+                // 测试认证状态监听
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        addResult(`✅ 认证状态监听正常，用户: ${user.email}`, 'success');
+                    } else {
+                        addResult('✅ 认证状态监听正常，用户未登录', 'success');
+                    }
+                });
+
+                addResult('✅ 用户认证功能正常', 'success');
+
+            } catch (error) {
+                addResult(`❌ 用户认证测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testFirestore() {
+            addResult('开始测试 Firestore 数据库...', 'info');
+
+            try {
+                const db = firebase.firestore();
+
+                // 测试数据库连接
+                const testRef = db.collection('test').doc('connection-test');
+
+                testRef.set({
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    test: 'deployment-test'
+                }).then(() => {
+                    addResult('✅ Firestore 写入测试成功', 'success');
+
+                    // 测试读取
+                    return testRef.get();
+                }).then((doc) => {
+                    if (doc.exists) {
+                        addResult('✅ Firestore 读取测试成功', 'success');
+                        addResult(`✅ 测试数据: ${JSON.stringify(doc.data())}`, 'success');
+
+                        // 清理测试数据
+                        return testRef.delete();
+                    } else {
+                        addResult('❌ 测试数据不存在', 'error');
+                    }
+                }).then(() => {
+                    addResult('✅ 测试数据清理完成', 'success');
+                    addResult('✅ Firestore 数据库功能完全正常', 'success');
+                }).catch((error) => {
+                    addResult(`❌ Firestore 测试失败: ${error.message}`, 'error');
+                });
+
+            } catch (error) {
+                addResult(`❌ Firestore 测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testAppLoading() {
+            addResult('开始测试应用加载...', 'info');
+
+            // 测试主要 JavaScript 文件
+            const scripts = [
+                'js/firebase-config.js',
+                'js/storage-firebase.js',
+                'js/app-firebase.js'
+            ];
+
+            let loadedCount = 0;
+
+            scripts.forEach(script => {
+                const scriptElement = document.createElement('script');
+                scriptElement.src = script;
+                scriptElement.onload = () => {
+                    loadedCount++;
+                    addResult(`✅ ${script} 加载成功`, 'success');
+
+                    if (loadedCount === scripts.length) {
+                        addResult('✅ 所有核心 JavaScript 文件加载完成', 'success');
+
+                        // 测试全局对象
+                        setTimeout(() => {
+                            if (window.FirebaseUtils) {
+                                addResult('✅ FirebaseUtils 全局对象可用', 'success');
+
+                                // 测试 FirebaseUtils 的功能
+                                if (window.FirebaseUtils.auth && window.FirebaseUtils.db) {
+                                    addResult('✅ Firebase 认证和数据库服务可用', 'success');
+                                } else {
+                                    addResult('❌ Firebase 服务不可用', 'error');
+                                }
+                            } else {
+                                addResult('❌ FirebaseUtils 全局对象不可用', 'error');
+                            }
+
+                            if (window.noteApp) {
+                                addResult('✅ noteApp 全局对象可用', 'success');
+                                addResult(`✅ 当前用户状态: ${window.noteApp.currentUser ? '已登录' : '未登录'}`, 'success');
+
+                                // 测试应用的核心功能
+                                if (window.noteApp.storage) {
+                                    addResult('✅ 存储管理器已初始化', 'success');
+                                    const syncStatus = window.noteApp.storage.getSyncStatus();
+                                    addResult(`✅ 同步状态: ${syncStatus.syncMode}`, 'success');
+                                }
+
+                                // 测试按钮事件绑定
+                                if (window.noteApp.newNoteBtn) {
+                                    addResult('✅ 新建笔记按钮已找到', 'success');
+                                } else {
+                                    addResult('❌ 新建笔记按钮未找到', 'error');
+                                }
+
+                            } else {
+                                addResult('ℹ️ noteApp 全局对象未初始化，这可能是因为在测试页面中', 'info');
+                            }
+                        }, 2000); // 等待2秒让应用完全初始化
+                    }
+                };
+                scriptElement.onerror = () => {
+                    addResult(`❌ ${script} 加载失败`, 'error');
+                };
+                document.head.appendChild(scriptElement);
+            });
+        }
+
+        // 页面加载完成后自动运行基础测试
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                addResult('页面加载完成，开始自动测试...', 'info');
+                testFirebaseConnection();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

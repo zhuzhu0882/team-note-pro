@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的笔记 - Team Note Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="mobile-fix.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部工具栏 -->
+        <header class="header">
+            <div class="header-left">
+                <h1><i class="fas fa-sticky-note"></i> 我的笔记</h1>
+                <div class="sync-status" id="sync-status">
+                    <i class="fas fa-cloud"></i>
+                    <span id="sync-text">本地存储</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="new-note-btn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 新建笔记
+                </button>
+                <button id="save-btn" class="btn btn-success">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+                <button id="delete-btn" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+                <button id="sync-btn" class="btn btn-info" style="display: none;">
+                    <i class="fas fa-sync"></i> 同步
+                </button>
+                <div class="user-menu">
+                    <button id="user-btn" class="btn btn-user" style="display: none;">
+                        <i class="fas fa-user"></i>
+                        <span id="user-name">用户</span>
+                    </button>
+                    <div class="user-dropdown" id="user-dropdown" style="display: none;">
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="user-details">
+                                <div class="user-email" id="user-email">user@example.com</div>
+                                <div class="sync-mode" id="sync-mode">云端同步</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <button id="settings-btn" class="dropdown-item">
+                            <i class="fas fa-cog"></i> 设置
+                        </button>
+                        <button id="toggle-sync-btn" class="dropdown-item">
+                            <i class="fas fa-exchange-alt"></i> 切换同步模式
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <button id="logout-btn" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i> 退出登录
+                        </button>
+                    </div>
+                </div>
+                <button id="login-btn" class="btn btn-secondary">
+                    <i class="fas fa-sign-in-alt"></i> 登录
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- 左侧笔记列表 -->
+            <aside class="sidebar">
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="搜索笔记...">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="notes-list" id="notes-list">
+                    <!-- 笔记列表将在这里动态生成 -->
+                </div>
+            </aside>
+
+            <!-- 右侧编辑区域 -->
+            <section class="editor-section">
+                <div class="editor-header">
+                    <input type="text" id="note-title" placeholder="笔记标题" class="note-title-input">
+                    <div class="editor-info">
+                        <span id="word-count">0 字</span>
+                        <span id="save-status" class="save-status">已保存</span>
+                    </div>
+                </div>
+                <div class="editor-container">
+                    <textarea id="note-content" placeholder="开始编写你的笔记..." class="note-content-textarea"></textarea>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部状态栏 -->
+        <footer class="footer">
+            <div class="footer-left">
+                <span id="notes-count">共 0 条笔记</span>
+            </div>
+            <div class="footer-right">
+                <button id="export-btn" class="btn btn-secondary">
+                    <i class="fas fa-download"></i> 导出
+                </button>
+                <button id="import-btn" class="btn btn-secondary">
+                    <i class="fas fa-upload"></i> 导入
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 确认删除模态框 -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <h3>确认删除</h3>
+            <p>确定要删除这条笔记吗？此操作不可恢复。</p>
+            <div class="modal-actions">
+                <button id="cancel-delete" class="btn btn-secondary">取消</button>
+                <button id="confirm-delete" class="btn btn-danger">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入文件输入（隐藏） -->
+    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+
+    <!-- 消息提示 -->
+    <div id="app-message" class="app-message" style="display: none;">
+        <div class="app-message-content">
+            <i class="fas fa-info-circle"></i>
+            <span id="app-message-text"></span>
+            <button class="app-message-close" onclick="hideAppMessage()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/storage-firebase.js"></script>
+    <script src="js/app-firebase.js"></script>
+</body>
+</html>

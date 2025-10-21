@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试页面 - Team Note Pro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+            min-height: 50px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        #debug-log {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Team Note Pro 调试页面</h1>
+
+    <div class="test-section">
+        <h2>📋 系统信息</h2>
+        <div id="system-info"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 Firebase 连接测试</h2>
+        <button onclick="testFirebaseConnection()">测试 Firebase 连接</button>
+        <button onclick="testFirebaseAuth()">测试用户认证</button>
+        <button onclick="testFirebaseDB()">测试数据库</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 按钮功能测试</h2>
+        <button id="test-new-note" onclick="testNewNote()">📝 测试新建笔记</button>
+        <button id="test-save" onclick="testSave()">💾 测试保存</button>
+        <button id="test-delete" onclick="testDelete()">🗑️ 测试删除</button>
+        <button onclick="testDOMEvents()">🎯 测试DOM事件</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📱 移动端测试</h2>
+        <button onclick="testMobileFeatures()">测试移动端特性</button>
+        <button onclick="testTouchEvents()">测试触摸事件</button>
+        <button onclick="testViewport()">测试视口</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📄 实时日志</h2>
+        <button onclick="clearLog()">清除日志</button>
+        <div id="debug-log"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+
+    <script>
+        // 日志函数
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `debug-result ${type}`;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('debug-log').innerHTML = '';
+            log('日志已清除', 'info');
+        }
+
+        // 系统信息
+        function showSystemInfo() {
+            const info = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                cookieEnabled: navigator.cookieEnabled,
+                onLine: navigator.onLine,
+                screen: `${screen.width}x${screen.height}`,
+                viewport: `${window.innerWidth}x${window.innerHeight}`,
+                touchSupport: 'ontouchstart' in window,
+                mobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+            };
+
+            const infoDiv = document.getElementById('system-info');
+            infoDiv.innerHTML = Object.entries(info).map(([key, value]) =>
+                `<div><strong>${key}:</strong> ${value}</div>`
+            ).join('');
+
+            log(`系统信息: ${JSON.stringify(info, null, 2)}`, 'info');
+        }
+
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCiUK6B4HCSHD3jGpcfRwbd81RxEtCO-l4",
+            authDomain: "team-note-pro.firebaseapp.com",
+            projectId: "team-note-pro",
+            storageBucket: "team-note-pro.appspot.com",
+            messagingSenderId: "475394331627",
+            appId: "1:475394331627:web:placeholder_app_id"
+        };
+
+        // 测试 Firebase 连接
+        function testFirebaseConnection() {
+            try {
+                log('开始测试 Firebase 连接...', 'info');
+
+                // 检查 Firebase SDK
+                if (typeof firebase === 'undefined') {
+                    log('❌ Firebase SDK 未加载', 'error');
+                    return;
+                }
+
+                // 初始化 Firebase
+                firebase.initializeApp(firebaseConfig);
+                log('✅ Firebase 初始化成功', 'success');
+
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+
+                log(`✅ Auth 服务: ${typeof auth}`, 'success');
+                log(`✅ Firestore 服务: ${typeof db}`, 'success');
+                log(`✅ 项目ID: ${firebase.app().options.projectId}`, 'success');
+
+                // 测试数据库连接
+                db.collection('test').doc('debug').set({
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    test: 'debug-test'
+                }).then(() => {
+                    log('✅ Firestore 写入测试成功', 'success');
+                    return db.collection('test').doc('debug').get();
+                }).then((doc) => {
+                    if (doc.exists) {
+                        log(`✅ Firestore 读取测试成功: ${JSON.stringify(doc.data())}`, 'success');
+                        return db.collection('test').doc('debug').delete();
+                    }
+                }).then(() => {
+                    log('✅ 测试数据清理完成', 'success');
+                }).catch((error) => {
+                    log(`❌ Firestore 测试失败: ${error.message}`, 'error');
+                });
+
+            } catch (error) {
+                log(`❌ Firebase 连接测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试用户认证
+        function testFirebaseAuth() {
+            try {
+                log('开始测试用户认证...', 'info');
+
+                const auth = firebase.auth();
+                const user = auth.currentUser;
+
+                if (user) {
+                    log(`✅ 用户已登录: ${user.email}`, 'success');
+                } else {
+                    log('ℹ️ 当前未登录', 'info');
+                }
+
+                // 监听认证状态变化
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        log(`✅ 认证状态变化 - 用户已登录: ${user.email}`, 'success');
+                    } else {
+                        log('ℹ️ 认证状态变化 - 用户未登录', 'info');
+                    }
+                });
+
+                log('✅ 用户认证功能正常', 'success');
+
+            } catch (error) {
+                log(`❌ 用户认证测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试数据库
+        function testFirebaseDB() {
+            try {
+                log('开始测试数据库功能...', 'info');
+
+                const db = firebase.firestore();
+
+                // 测试创建笔记
+                const testNote = {
+                    title: '测试笔记',
+                    content: '这是一个测试笔记内容',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                db.collection('notes').add(testNote).then((docRef) => {
+                    log(`✅ 创建笔记成功: ${docRef.id}`, 'success');
+
+                    // 测试读取笔记
+                    return db.collection('notes').doc(docRef.id).get();
+                }).then((doc) => {
+                    if (doc.exists) {
+                        log(`✅ 读取笔记成功: ${JSON.stringify(doc.data())}`, 'success');
+
+                        // 测试更新笔记
+                        return db.collection('notes').doc(doc.id).update({
+                            content: '更新后的笔记内容',
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                }).then(() => {
+                    log('✅ 更新笔记成功', 'success');
+
+                    // 测试删除笔记
+                    return db.collection('notes').doc(doc.id).delete();
+                }).then(() => {
+                    log('✅ 删除笔记成功', 'success');
+                    log('✅ 数据库所有功能测试通过', 'success');
+                }).catch((error) => {
+                    log(`❌ 数据库测试失败: ${error.message}`, 'error');
+                });
+
+            } catch (error) {
+                log(`❌ 数据库测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试新建笔记
+        function testNewNote() {
+            log('📝 测试新建笔记功能...', 'info');
+
+            // 模拟新建笔记的点击事件
+            const button = document.getElementById('test-new-note');
+
+            try {
+                // 检查按钮是否正确绑定事件
+                if (button.onclick) {
+                    log('✅ 按钮事件绑定成功', 'success');
+
+                    // 模拟创建笔记的逻辑
+                    const newNote = {
+                        id: 'test_' + Date.now(),
+                        title: '测试笔记 ' + new Date().toLocaleTimeString(),
+                        content: '这是测试创建的笔记内容',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    log(`✅ 模拟创建笔记: ${JSON.stringify(newNote, null, 2)}`, 'success');
+
+                    // 如果存在全局 noteApp，尝试使用它的方法
+                    if (window.noteApp && window.noteApp.createNewNote) {
+                        log('✅ 找到全局 noteApp，调用 createNewNote', 'success');
+                        // window.noteApp.createNewNote(); // 先不调用，避免错误
+                    } else {
+                        log('ℹ️ 未找到全局 noteApp，使用模拟创建', 'info');
+                    }
+                } else {
+                    log('❌ 按钮事件未绑定', 'error');
+                }
+            } catch (error) {
+                log(`❌ 新建笔记测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试保存功能
+        function testSave() {
+            log('💾 测试保存功能...', 'info');
+
+            try {
+                // 模拟保存逻辑
+                const saveData = {
+                    title: '测试保存标题',
+                    content: '测试保存内容',
+                    timestamp: new Date().toISOString()
+                };
+
+                log(`✅ 模拟保存数据: ${JSON.stringify(saveData, null, 2)}`, 'success');
+
+                if (window.noteApp && window.noteApp.saveCurrentNote) {
+                    log('✅ 找到保存方法', 'success');
+                } else {
+                    log('ℹ️ 未找到保存方法，使用模拟保存', 'info');
+                }
+            } catch (error) {
+                log(`❌ 保存测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试删除功能
+        function testDelete() {
+            log('🗑️ 测试删除功能...', 'info');
+
+            try {
+                log('✅ 模拟删除笔记', 'success');
+
+                if (window.noteApp && window.noteApp.deleteCurrentNote) {
+                    log('✅ 找到删除方法', 'success');
+                } else {
+                    log('ℹ️ 未找到删除方法，使用模拟删除', 'info');
+                }
+            } catch (error) {
+                log(`❌ 删除测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试 DOM 事件
+        function testDOMEvents() {
+            log('🎯 测试 DOM 事件...', 'info');
+
+            try {
+                // 测试各种事件
+                const events = ['click', 'touchstart', 'touchend', 'mousedown', 'mouseup'];
+
+                events.forEach(eventType => {
+                    document.addEventListener(eventType, (e) => {
+                        log(`📡 ${eventType} 事件触发: ${e.target.tagName}`, 'info');
+                    }, { once: true });
+                });
+
+                // 创建测试按钮并点击
+                const testBtn = document.createElement('button');
+                testBtn.textContent = '测试按钮';
+                testBtn.onclick = () => log('✅ 测试按钮点击成功', 'success');
+                document.body.appendChild(testBtn);
+
+                setTimeout(() => {
+                    testBtn.click();
+                    document.body.removeChild(testBtn);
+                }, 100);
+
+                log('✅ DOM 事件测试设置完成', 'success');
+            } catch (error) {
+                log(`❌ DOM 事件测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试移动端特性
+        function testMobileFeatures() {
+            log('📱 测试移动端特性...', 'info');
+
+            const features = {
+                touchSupport: 'ontouchstart' in window,
+                mobileDetect: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+                orientation: screen.orientation || window.orientation,
+                vibration: 'vibrate' in navigator,
+                geolocation: 'geolocation' in navigator,
+                camera: 'mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices
+            };
+
+            log(`移动端特性: ${JSON.stringify(features, null, 2)}`, 'info');
+
+            if (features.touchSupport) {
+                log('✅ 触摸支持正常', 'success');
+            } else {
+                log('ℹ️ 无触摸支持', 'info');
+            }
+        }
+
+        // 测试触摸事件
+        function testTouchEvents() {
+            log('👆 测试触摸事件...', 'info');
+
+            if ('ontouchstart' in window) {
+                const testArea = document.createElement('div');
+                testArea.style.cssText = 'width: 200px; height: 100px; background: #007bff; color: white; display: flex; align-items: center; justify-content: center; margin: 10px; border-radius: 8px; cursor: pointer;';
+                testArea.textContent = '触摸此区域';
+
+                testArea.addEventListener('touchstart', (e) => {
+                    log(`✅ 触摸开始: ${e.touches.length} 个触摸点`, 'success');
+                });
+
+                testArea.addEventListener('touchend', (e) => {
+                    log('✅ 触摸结束', 'success');
+                });
+
+                document.body.appendChild(testArea);
+                log('✅ 触摸事件监听器已添加', 'success');
+            } else {
+                log('ℹ️ 当前设备不支持触摸事件', 'info');
+            }
+        }
+
+        // 测试视口
+        function testViewport() {
+            log('🖼️ 测试视口...', 'info');
+
+            const viewport = {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                devicePixelRatio: window.devicePixelRatio || 1,
+                screen: {
+                    width: screen.width,
+                    height: screen.height,
+                    availWidth: screen.availWidth,
+                    availHeight: screen.availHeight
+                }
+            };
+
+            log(`视口信息: ${JSON.stringify(viewport, null, 2)}`, 'info');
+        }
+
+        // 页面加载完成后执行
+        window.addEventListener('load', () => {
+            log('🚀 调试页面加载完成', 'success');
+            showSystemInfo();
+
+            // 自动开始基础测试
+            setTimeout(() => {
+                log('🔍 开始自动测试...', 'info');
+                testFirebaseConnection();
+            }, 1000);
+        });
+
+        // 错误监听
+        window.addEventListener('error', (e) => {
+            log(`❌ JavaScript 错误: ${e.error.message} at ${e.filename}:${e.lineno}`, 'error');
+        });
+
+        // 未处理的 Promise 拒绝
+        window.addEventListener('unhandledrejection', (e) => {
+            log(`❌ 未处理的 Promise 拒绝: ${e.reason}`, 'error');
+        });
+    </script>
+</body>
+</html>

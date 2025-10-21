@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化版笔记应用 - Team Note Pro</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #fff;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-box {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .note-item {
+            padding: 12px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .note-item:hover {
+            background: #f8f9fa;
+            border-color: #007bff;
+        }
+
+        .note-item.active {
+            background: #e3f2fd;
+            border-color: #007bff;
+        }
+
+        .note-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .note-preview {
+            font-size: 12px;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .note-date {
+            font-size: 10px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .editor {
+            flex: 1;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .title-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .editor-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .content-textarea {
+            width: 100%;
+            min-height: 400px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #ccc;
+        }
+
+        .status-bar {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 6px;
+            color: white;
+            z-index: 1000;
+            max-width: 300px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.success {
+            background: #28a745;
+        }
+
+        .message.error {
+            background: #dc3545;
+        }
+
+        .message.info {
+            background: #007bff;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* 移动端响应式 */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 300px;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .editor-content {
+                padding: 15px;
+            }
+
+            .content-textarea {
+                min-height: 300px;
+            }
+
+            .header {
+                padding: 10px 15px;
+            }
+
+            .btn {
+                font-size: 16px;
+                padding: 12px 16px;
+            }
+        }
+
+        /* 深色模式 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #1a1a1a;
+                color: #fff;
+            }
+
+            .header, .sidebar, .editor, .status-bar {
+                background: #2d2d2d;
+                border-color: #404040;
+            }
+
+            .note-item {
+                background: #2d2d2d;
+                border-color: #404040;
+                color: #fff;
+            }
+
+            .note-item:hover {
+                background: #404040;
+            }
+
+            .title-input, .content-textarea, .search-input {
+                background: #2d2d2d;
+                border-color: #404040;
+                color: #fff;
+            }
+
+            .empty-state {
+                color: #ccc;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-sticky-note"></i> 简化笔记
+            </div>
+            <div class="buttons">
+                <button class="btn btn-primary" onclick="createNewNote()">
+                    <i class="fas fa-plus"></i> 新建笔记
+                </button>
+                <button class="btn btn-success" onclick="saveNote()">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+                <button class="btn btn-danger" onclick="deleteNote()">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+                <button class="btn btn-secondary" onclick="exportNotes()">
+                    <i class="fas fa-download"></i> 导出
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <aside class="sidebar">
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="搜索笔记..." oninput="searchNotes(this.value)">
+                </div>
+                <div class="notes-list" id="notes-list">
+                    <div class="empty-state">
+                        <i class="fas fa-sticky-note"></i>
+                        <p>还没有笔记</p>
+                        <small>点击"新建笔记"开始创建</small>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="editor">
+                <div class="editor-header">
+                    <input type="text" class="title-input" id="note-title" placeholder="笔记标题">
+                </div>
+                <div class="editor-content">
+                    <textarea class="content-textarea" id="note-content" placeholder="开始编写笔记内容..."></textarea>
+                </div>
+            </section>
+        </main>
+
+        <footer class="status-bar">
+            <div class="status-left">
+                <span id="notes-count">共 0 条笔记</span>
+            </div>
+            <div class="status-right">
+                <span id="save-status">已保存</span>
+                <span id="word-count">0 字</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+
+    <script>
+        // 简化的笔记应用
+        class SimpleNoteApp {
+            constructor() {
+                this.notes = [];
+                this.currentNoteId = null;
+                this.currentUser = null;
+                this.db = null;
+                this.auth = null;
+                this.useFirebase = false;
+
+                this.init();
+            }
+
+            async init() {
+                try {
+                    console.log('🚀 初始化简化笔记应用...');
+
+                    // 尝试初始化 Firebase
+                    await this.initFirebase();
+
+                    // 加载笔记
+                    await this.loadNotes();
+
+                    // 绑定事件
+                    this.bindEvents();
+
+                    console.log('✅ 应用初始化完成');
+                    this.showMessage('应用加载完成', 'success');
+                } catch (error) {
+                    console.error('❌ 应用初始化失败:', error);
+                    this.showMessage('应用加载失败: ' + error.message, 'error');
+                }
+            }
+
+            async initFirebase() {
+                try {
+                    const firebaseConfig = {
+                        apiKey: "AIzaSyCiUK6B4HCSHD3jGpcfRwbd81RxEtCO-l4",
+                        authDomain: "team-note-pro.firebaseapp.com",
+                        projectId: "team-note-pro",
+                        storageBucket: "team-note-pro.appspot.com",
+                        messagingSenderId: "475394331627",
+                        appId: "1:475394331627:web:placeholder_app_id"
+                    };
+
+                    firebase.initializeApp(firebaseConfig);
+                    this.auth = firebase.auth();
+                    this.db = firebase.firestore();
+
+                    // 检查用户登录状态
+                    this.auth.onAuthStateChanged((user) => {
+                        if (user) {
+                            this.currentUser = user;
+                            this.useFirebase = true;
+                            console.log('✅ 用户已登录:', user.email);
+                            this.showMessage(`欢迎回来，${user.email}`, 'success');
+                            this.loadNotes();
+                        } else {
+                            this.currentUser = null;
+                            this.useFirebase = false;
+                            console.log('ℹ️ 用户未登录，使用本地存储');
+                            this.loadNotes();
+                        }
+                    });
+
+                    console.log('✅ Firebase 初始化成功');
+                } catch (error) {
+                    console.warn('⚠️ Firebase 初始化失败，使用本地存储:', error);
+                    this.useFirebase = false;
+                }
+            }
+
+            bindEvents() {
+                // 标题输入事件
+                document.getElementById('note-title').addEventListener('input', () => {
+                    this.updateWordCount();
+                    this.updateSaveStatus('编辑中...');
+                });
+
+                // 内容输入事件
+                document.getElementById('note-content').addEventListener('input', () => {
+                    this.updateWordCount();
+                    this.updateSaveStatus('编辑中...');
+                });
+
+                // 键盘快捷键
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch (e.key) {
+                            case 's':
+                                e.preventDefault();
+                                this.saveNote();
+                                break;
+                            case 'n':
+                                e.preventDefault();
+                                this.createNewNote();
+                                break;
+                        }
+                    }
+                });
+
+                console.log('✅ 事件绑定完成');
+            }
+
+            async loadNotes() {
+                try {
+                    if (this.useFirebase && this.currentUser) {
+                        // 从 Firebase 加载
+                        let snapshot;
+                        try {
+                            // 尝试使用排序查询（需要索引）
+                            snapshot = await this.db
+                                .collection('notes')
+                                .where('uid', '==', this.currentUser.uid)
+                                .orderBy('updatedAt', 'desc')
+                                .get();
+                        } catch (indexError) {
+                            if (indexError.message.includes('requires an index')) {
+                                console.warn('⚠️ 索引未创建，使用无排序查询');
+                                this.showMessage('正在创建数据库索引，请稍候...', 'info');
+
+                                // 临时解决方案：先获取所有笔记，然后在客户端排序
+                                snapshot = await this.db
+                                    .collection('notes')
+                                    .where('uid', '==', this.currentUser.uid)
+                                    .get();
+
+                                // 在客户端排序
+                                const notes = snapshot.docs.map(doc => ({
+                                    id: doc.id,
+                                    ...doc.data(),
+                                    updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
+                                    createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+                                }));
+
+                                notes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                                this.notes = notes;
+
+                                this.renderNotesList();
+                                this.updateNotesCount();
+
+                                if (this.notes.length > 0 && !this.currentNoteId) {
+                                    this.selectNote(this.notes[0].id);
+                                }
+
+                                console.log(`✅ 从 Firebase 加载了 ${this.notes.length} 条笔记（客户端排序）`);
+                                return;
+                            } else {
+                                throw indexError;
+                            }
+                        }
+
+                        this.notes = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data(),
+                            updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
+                            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+                        }));
+
+                        console.log(`✅ 从 Firebase 加载了 ${this.notes.length} 条笔记`);
+                    } else {
+                        // 从本地存储加载
+                        const stored = localStorage.getItem('simple-notes');
+                        this.notes = stored ? JSON.parse(stored) : [];
+                        console.log(`✅ 从本地存储加载了 ${this.notes.length} 条笔记`);
+                    }
+
+                    this.renderNotesList();
+                    this.updateNotesCount();
+
+                    // 如果有笔记，选中第一条
+                    if (this.notes.length > 0 && !this.currentNoteId) {
+                        this.selectNote(this.notes[0].id);
+                    }
+                } catch (error) {
+                    console.error('❌ 加载笔记失败:', error);
+                    this.showMessage('加载笔记失败: ' + error.message, 'error');
+                }
+            }
+
+            async saveNote() {
+                if (!this.currentNoteId) {
+                    this.showMessage('请先选择或创建笔记', 'error');
+                    return;
+                }
+
+                try {
+                    const title = document.getElementById('note-title').value.trim();
+                    const content = document.getElementById('note-content').value;
+
+                    const noteData = {
+                        title: title || '无标题笔记',
+                        content: content,
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    if (this.useFirebase && this.currentUser) {
+                        // 保存到 Firebase
+                        await this.db.collection('notes').doc(this.currentNoteId).update(noteData);
+                        console.log('✅ 笔记已保存到 Firebase');
+                    } else {
+                        // 保存到本地存储
+                        const noteIndex = this.notes.findIndex(n => n.id === this.currentNoteId);
+                        if (noteIndex !== -1) {
+                            this.notes[noteIndex] = { ...this.notes[noteIndex], ...noteData };
+                            localStorage.setItem('simple-notes', JSON.stringify(this.notes));
+                            console.log('✅ 笔记已保存到本地存储');
+                        }
+                    }
+
+                    this.updateSaveStatus('已保存');
+                    this.showMessage('笔记保存成功', 'success');
+                    this.loadNotes(); // 重新加载列表
+                } catch (error) {
+                    console.error('❌ 保存笔记失败:', error);
+                    this.showMessage('保存失败: ' + error.message, 'error');
+                }
+            }
+
+            async createNewNote() {
+                try {
+                    const newNote = {
+                        title: '新建笔记',
+                        content: '',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    if (this.useFirebase && this.currentUser) {
+                        // 创建到 Firebase
+                        newNote.uid = this.currentUser.uid;
+                        const docRef = await this.db.collection('notes').add(newNote);
+                        newNote.id = docRef.id;
+                        console.log('✅ 笔记已创建到 Firebase');
+                    } else {
+                        // 创建到本地存储
+                        newNote.id = 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                        this.notes.unshift(newNote);
+                        localStorage.setItem('simple-notes', JSON.stringify(this.notes));
+                        console.log('✅ 笔记已创建到本地存储');
+                    }
+
+                    this.currentNoteId = newNote.id;
+                    this.loadNotes();
+                    this.selectNote(newNote.id);
+
+                    // 聚焦到标题输入框
+                    document.getElementById('note-title').focus();
+                    document.getElementById('note-title').select();
+
+                    this.showMessage('笔记创建成功', 'success');
+                } catch (error) {
+                    console.error('❌ 创建笔记失败:', error);
+                    this.showMessage('创建失败: ' + error.message, 'error');
+                }
+            }
+
+            async deleteNote() {
+                if (!this.currentNoteId) {
+                    this.showMessage('请先选择要删除的笔记', 'error');
+                    return;
+                }
+
+                if (!confirm('确定要删除这条笔记吗？')) {
+                    return;
+                }
+
+                try {
+                    if (this.useFirebase && this.currentUser) {
+                        // 从 Firebase 删除
+                        await this.db.collection('notes').doc(this.currentNoteId).delete();
+                        console.log('✅ 笔记已从 Firebase 删除');
+                    } else {
+                        // 从本地存储删除
+                        this.notes = this.notes.filter(n => n.id !== this.currentNoteId);
+                        localStorage.setItem('simple-notes', JSON.stringify(this.notes));
+                        console.log('✅ 笔记已从本地存储删除');
+                    }
+
+                    this.currentNoteId = null;
+                    this.clearEditor();
+                    this.loadNotes();
+                    this.showMessage('笔记删除成功', 'success');
+                } catch (error) {
+                    console.error('❌ 删除笔记失败:', error);
+                    this.showMessage('删除失败: ' + error.message, 'error');
+                }
+            }
+
+            selectNote(noteId) {
+                this.currentNoteId = noteId;
+                const note = this.notes.find(n => n.id === noteId);
+
+                if (note) {
+                    document.getElementById('note-title').value = note.title || '';
+                    document.getElementById('note-content').value = note.content || '';
+                    this.updateWordCount();
+                    this.updateSaveStatus('已保存');
+
+                    // 更新列表中的选中状态
+                    document.querySelectorAll('.note-item').forEach(item => {
+                        item.classList.toggle('active', item.dataset.id === noteId);
+                    });
+                }
+            }
+
+            clearEditor() {
+                document.getElementById('note-title').value = '';
+                document.getElementById('note-content').value = '';
+                this.updateWordCount();
+                this.updateSaveStatus('已保存');
+            }
+
+            renderNotesList() {
+                const container = document.getElementById('notes-list');
+
+                if (this.notes.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-sticky-note"></i>
+                            <p>还没有笔记</p>
+                            <small>点击"新建笔记"开始创建</small>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = this.notes.map(note => `
+                    <div class="note-item ${note.id === this.currentNoteId ? 'active' : ''}"
+                         data-id="${note.id}" onclick="app.selectNote('${note.id}')">
+                        <div class="note-title">${this.escapeHtml(note.title)}</div>
+                        <div class="note-preview">${this.escapeHtml((note.content || '').substring(0, 100))}</div>
+                        <div class="note-date">${this.formatDate(note.updatedAt)}</div>
+                    </div>
+                `).join('');
+            }
+
+            searchNotes(query) {
+                if (!query.trim()) {
+                    this.renderNotesList();
+                    return;
+                }
+
+                const filtered = this.notes.filter(note =>
+                    note.title.toLowerCase().includes(query.toLowerCase()) ||
+                    note.content.toLowerCase().includes(query.toLowerCase())
+                );
+
+                const container = document.getElementById('notes-list');
+                if (filtered.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-search"></i>
+                            <p>没有找到匹配的笔记</p>
+                            <small>尝试其他关键词</small>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = filtered.map(note => `
+                        <div class="note-item ${note.id === this.currentNoteId ? 'active' : ''}"
+                             data-id="${note.id}" onclick="app.selectNote('${note.id}')">
+                            <div class="note-title">${this.escapeHtml(note.title)}</div>
+                            <div class="note-preview">${this.escapeHtml((note.content || '').substring(0, 100))}</div>
+                            <div class="note-date">${this.formatDate(note.updatedAt)}</div>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            exportNotes() {
+                try {
+                    const dataStr = JSON.stringify(this.notes, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `notes_export_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    this.showMessage('笔记导出成功', 'success');
+                } catch (error) {
+                    console.error('❌ 导出失败:', error);
+                    this.showMessage('导出失败: ' + error.message, 'error');
+                }
+            }
+
+            updateWordCount() {
+                const content = document.getElementById('note-content').value;
+                document.getElementById('word-count').textContent = `${content.length} 字`;
+            }
+
+            updateNotesCount() {
+                document.getElementById('notes-count').textContent = `共 ${this.notes.length} 条笔记`;
+            }
+
+            updateSaveStatus(status) {
+                document.getElementById('save-status').textContent = status;
+            }
+
+            showMessage(text, type = 'info') {
+                const message = document.createElement('div');
+                message.className = `message ${type}`;
+                message.textContent = text;
+                document.body.appendChild(message);
+
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    setTimeout(() => {
+                        if (message.parentNode) {
+                            message.parentNode.removeChild(message);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+
+            formatDate(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) {
+                    return '今天 ' + date.toLocaleTimeString('zh-CN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } else if (diffDays === 1) {
+                    return '昨天';
+                } else if (diffDays < 7) {
+                    return diffDays + '天前';
+                } else {
+                    return date.toLocaleDateString('zh-CN');
+                }
+            }
+
+            escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // 全局函数
+        let app;
+
+        function createNewNote() {
+            if (app) app.createNewNote();
+        }
+
+        function saveNote() {
+            if (app) app.saveNote();
+        }
+
+        function deleteNote() {
+            if (app) app.deleteNote();
+        }
+
+        function exportNotes() {
+            if (app) app.exportNotes();
+        }
+
+        function searchNotes(query) {
+            if (app) app.searchNotes(query);
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📱 简化笔记应用页面加载完成');
+            app = new SimpleNoteApp();
+        });
+
+        // 错误监听
+        window.addEventListener('error', (e) => {
+            console.error('❌ 页面错误:', e.error);
+        });
+
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('❌ Promise 错误:', e.reason);
+        });
+    </script>
+</body>
+</html>

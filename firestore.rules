@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 用户只能访问自己的笔记
+    match /notes/{noteId} {
+      allow read, write: if request.auth != null &&
+        (request.auth.uid == resource.data.uid ||
+         request.auth.uid == request.resource.data.uid);
+
+      allow create: if request.auth != null &&
+        request.auth.uid == request.resource.data.uid;
+
+      allow delete: if request.auth != null &&
+        request.auth.uid == resource.data.uid;
+    }
+
+    // 用户可以访问自己的用户文档
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
