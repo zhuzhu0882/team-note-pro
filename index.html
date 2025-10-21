@@ -565,6 +565,11 @@
     </style>
 </head>
 <body>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
     <div class="app-container">
         <header class="header">
             <div class="logo">
@@ -684,22 +689,68 @@
     </div>
 
     <script>
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyCiUK6B4HCSHD3jGpcfRwbd81RxEtCO-l4",
+            authDomain: "team-note-pro.firebaseapp.com",
+            projectId: "team-note-pro",
+            storageBucket: "team-note-pro.appspot.com",
+            messagingSenderId: "475394331627",
+            appId: "1:475394331627:web:8b8d9d3d3e5f7a7b8c8d8e"
+        };
+
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
         // 完全内联的JavaScript，避免外部文件安全问题
         class SecureNoteApp {
             constructor() {
                 this.notes = [];
                 this.currentNoteId = null;
                 this.storageKey = 'secure-notes';
+                this.currentUser = null;
+                this.firestoreEnabled = false;
 
                 this.init();
             }
 
             init() {
                 console.log('🚀 安全笔记应用初始化...');
+                this.initFirebase();
                 this.loadNotes();
                 this.bindEvents();
                 console.log('✅ 应用初始化完成');
                 this.showMessage('应用加载完成', 'success');
+            }
+
+            initFirebase() {
+                // 检查 Firebase 是否可用
+                try {
+                    if (firebase && firebase.firestore) {
+                        this.firestoreEnabled = true;
+                        console.log('✅ Firebase Firestore 已启用');
+
+                        // 监听认证状态
+                        auth.onAuthStateChanged((user) => {
+                            if (user) {
+                                this.currentUser = user;
+                                console.log('✅ Firebase 用户已登录:', user.email);
+                                this.loadNotesFromFirestore();
+                            } else {
+                                this.currentUser = null;
+                                console.log('📱 Firebase 用户未登录，使用本地存储');
+                                this.loadNotes();
+                            }
+                        });
+                    } else {
+                        console.warn('⚠️ Firebase 不可用，使用本地存储');
+                    }
+                } catch (error) {
+                    console.error('❌ Firebase 初始化失败:', error);
+                    this.firestoreEnabled = false;
+                }
             }
 
             bindEvents() {
@@ -761,11 +812,96 @@
 
             saveNotes() {
                 try {
-                    localStorage.setItem(this.storageKey, JSON.stringify(this.notes));
-                    console.log('✅ 笔记已保存到本地存储');
+                    // 如果已登录到 Firebase，保存到 Firestore
+                    if (this.firestoreEnabled && this.currentUser) {
+                        this.saveNotesToFirestore();
+                    } else {
+                        // 否则保存到本地存储
+                        localStorage.setItem(this.storageKey, JSON.stringify(this.notes));
+                        console.log('✅ 笔记已保存到本地存储');
+                    }
                 } catch (error) {
                     console.error('❌ 保存笔记失败:', error);
                     this.showMessage('保存失败', 'error');
+                }
+            }
+
+            // Firestore 相关方法
+            async saveNotesToFirestore() {
+                try {
+                    const userId = this.currentUser.uid;
+                    const userNotesRef = db.collection('users').doc(userId).collection('notes');
+
+                    // 批量保存笔记
+                    const batch = db.batch();
+
+                    // 清除现有笔记
+                    const existingNotes = await userNotesRef.get();
+                    existingNotes.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+
+                    // 添加新笔记
+                    this.notes.forEach(note => {
+                        const noteRef = userNotesRef.doc(note.id);
+                        batch.set(noteRef, {
+                            ...note,
+                            userId: userId,
+                            syncedAt: new Date().toISOString()
+                        });
+                    });
+
+                    await batch.commit();
+                    console.log('✅ 笔记已同步到 Firestore');
+
+                    // 同时保存到本地作为备份
+                    localStorage.setItem(this.storageKey, JSON.stringify(this.notes));
+
+                } catch (error) {
+                    console.error('❌ 保存到 Firestore 失败:', error);
+                    this.showMessage('云端同步失败，已保存到本地', 'error');
+                    // 降级到本地存储
+                    localStorage.setItem(this.storageKey, JSON.stringify(this.notes));
+                }
+            }
+
+            async loadNotesFromFirestore() {
+                try {
+                    if (!this.currentUser) {
+                        this.loadNotes();
+                        return;
+                    }
+
+                    const userId = this.currentUser.uid;
+                    const userNotesRef = db.collection('users').doc(userId).collection('notes');
+
+                    const snapshot = await userNotesRef.orderBy('updatedAt', 'desc').get();
+
+                    this.notes = [];
+                    snapshot.forEach(doc => {
+                        const note = doc.data();
+                        this.notes.push(note);
+                    });
+
+                    console.log(`✅ 从 Firestore 加载了 ${this.notes.length} 条笔记`);
+
+                    this.renderNotesList();
+                    this.updateNotesCount();
+
+                    if (this.notes.length > 0 && !this.currentNoteId) {
+                        this.selectNote(this.notes[0].id);
+                    } else if (this.notes.length === 0) {
+                        this.showEmptyState();
+                    }
+
+                    // 同时保存到本地作为备份
+                    localStorage.setItem(this.storageKey, JSON.stringify(this.notes));
+
+                } catch (error) {
+                    console.error('❌ 从 Firestore 加载笔记失败:', error);
+                    this.showMessage('从云端加载失败，使用本地数据', 'error');
+                    // 降级到本地存储
+                    this.loadNotes();
                 }
             }
 
@@ -1019,7 +1155,7 @@
                 document.getElementById('reset-modal').style.display = 'none';
             }
 
-            doLogin() {
+            async doLogin() {
                 const email = document.getElementById('login-email').value.trim();
                 const password = document.getElementById('login-password').value;
                 const rememberMe = document.getElementById('remember-me').checked;
@@ -1042,58 +1178,79 @@
                     return;
                 }
 
-                // 模拟登录过程
+                // Firebase 登录
                 this.showMessage('正在登录...', 'info');
 
-                // 模拟网络请求
-                setTimeout(() => {
-                    // 这里模拟登录成功
-                    this.currentUser = {
-                        email: email,
-                        username: email.split('@')[0],
-                        loginTime: new Date().toISOString()
-                    };
+                try {
+                    const result = await auth.signInWithEmailAndPassword(email, password);
+                    console.log('✅ Firebase 登录成功:', result.user);
 
-                    // 保存登录状态
-                    if (rememberMe) {
-                        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-                    }
-
-                    // 更新UI
-                    this.updateLoginUI();
+                    // Firebase Auth 会自动触发 onAuthStateChanged
+                    // 所以不需要手动设置 currentUser
 
                     // 隐藏登录框
                     hideLogin();
 
-                    // 显示成功消息
-                    this.showMessage(`欢迎回来，${this.currentUser.username}！`, 'success');
-                    console.log('✅ 用户登录成功:', this.currentUser);
+                    this.showMessage(`登录成功！`, 'success');
 
-                }, 1500);
+                } catch (error) {
+                    console.error('❌ Firebase 登录失败:', error);
+                    let errorMessage = '登录失败';
+
+                    switch (error.code) {
+                        case 'auth/user-not-found':
+                            errorMessage = '用户不存在，请先注册';
+                            break;
+                        case 'auth/wrong-password':
+                            errorMessage = '密码错误';
+                            break;
+                        case 'auth/invalid-email':
+                            errorMessage = '邮箱格式无效';
+                            break;
+                        case 'auth/too-many-requests':
+                            errorMessage = '请求过于频繁，请稍后再试';
+                            break;
+                        default:
+                            errorMessage = error.message || '登录失败';
+                    }
+
+                    this.showMessage(errorMessage, 'error');
+                }
             }
 
-            doGoogleLogin() {
-                this.showMessage('正在跳转到 Google 登录...', 'info');
+            async doGoogleLogin() {
+                this.showMessage('正在启动 Google 登录...', 'info');
 
-                // 模拟 Google 登录
-                setTimeout(() => {
-                    this.currentUser = {
-                        email: 'user@gmail.com',
-                        username: 'Google用户',
-                        loginTime: new Date().toISOString(),
-                        provider: 'google'
-                    };
+                try {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    const result = await auth.signInWithPopup(provider);
+                    console.log('✅ Google 登录成功:', result.user);
 
-                    localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-                    this.updateLoginUI();
+                    // 隐藏登录框
                     hideLogin();
 
                     this.showMessage('Google 登录成功！', 'success');
-                    console.log('✅ Google 登录成功:', this.currentUser);
-                }, 1000);
+
+                } catch (error) {
+                    console.error('❌ Google 登录失败:', error);
+                    let errorMessage = 'Google 登录失败';
+
+                    switch (error.code) {
+                        case 'auth/popup-closed-by-user':
+                            errorMessage = '登录窗口已关闭';
+                            break;
+                        case 'auth/popup-blocked':
+                            errorMessage = '登录窗口被阻止，请允许弹窗';
+                            break;
+                        default:
+                            errorMessage = error.message || 'Google 登录失败';
+                    }
+
+                    this.showMessage(errorMessage, 'error');
+                }
             }
 
-            doResetPassword() {
+            async doResetPassword() {
                 const email = document.getElementById('reset-email').value.trim();
 
                 if (!email) {
@@ -1109,20 +1266,44 @@
 
                 this.showMessage('正在发送重置邮件...', 'info');
 
-                setTimeout(() => {
+                try {
+                    await auth.sendPasswordResetEmail(email);
                     this.showMessage(`重置密码邮件已发送到 ${email}`, 'success');
                     hideResetPassword();
-                }, 1500);
+                } catch (error) {
+                    console.error('❌ 发送重置邮件失败:', error);
+                    let errorMessage = '发送重置邮件失败';
+
+                    switch (error.code) {
+                        case 'auth/user-not-found':
+                            errorMessage = '该邮箱尚未注册';
+                            break;
+                        case 'auth/invalid-email':
+                            errorMessage = '邮箱格式无效';
+                            break;
+                        case 'auth/too-many-requests':
+                            errorMessage = '请求过于频繁，请稍后再试';
+                            break;
+                        default:
+                            errorMessage = error.message || '发送重置邮件失败';
+                    }
+
+                    this.showMessage(errorMessage, 'error');
+                }
             }
 
-            logout() {
+            async logout() {
                 if (this.currentUser) {
                     if (confirm('确定要退出登录吗？')) {
-                        this.currentUser = null;
-                        localStorage.removeItem('currentUser');
-                        this.updateLoginUI();
-                        this.showMessage('已退出登录', 'info');
-                        console.log('✅ 用户已登出');
+                        try {
+                            await auth.signOut();
+                            // Firebase Auth 会自动触发 onAuthStateChanged
+                            this.showMessage('已退出登录', 'info');
+                            console.log('✅ 用户已登出');
+                        } catch (error) {
+                            console.error('❌ 登出失败:', error);
+                            this.showMessage('登出失败', 'error');
+                        }
                     }
                 }
             }
@@ -1137,9 +1318,16 @@
                     loginBtn.style.display = 'none';
                     logoutBtn.style.display = 'inline-flex';
 
+                    // 获取用户名
+                    let username = this.currentUser.displayName || this.currentUser.email;
+                    if (username.includes('@')) {
+                        username = username.split('@')[0];
+                    }
+
                     // 更新底部信息
                     if (footer) {
-                        footer.innerHTML = `欢迎，${this.currentUser.username} | Team Note Pro`;
+                        const syncStatus = this.firestoreEnabled ? '🔗 云端同步' : '📱 本地模式';
+                        footer.innerHTML = `欢迎，${username} | ${syncStatus} | Team Note Pro`;
                     }
 
                 } else {
@@ -1154,20 +1342,6 @@
                 }
             }
 
-            // 页面加载时检查登录状态
-            checkLoginStatus() {
-                const savedUser = localStorage.getItem('currentUser');
-                if (savedUser) {
-                    try {
-                        this.currentUser = JSON.parse(savedUser);
-                        this.updateLoginUI();
-                        console.log('✅ 自动登录成功:', this.currentUser);
-                    } catch (error) {
-                        console.warn('⚠️ 登录数据损坏，清除保存的登录状态');
-                        localStorage.removeItem('currentUser');
-                    }
-                }
-            }
         }
 
         // 全局应用实例
@@ -1232,8 +1406,6 @@
             console.log('📱 安全笔记应用页面加载完成');
             try {
                 app = new SecureNoteApp();
-                // 检查登录状态
-                app.checkLoginStatus();
                 console.log('🎉 应用启动成功');
             } catch (error) {
                 console.error('❌ 应用启动失败:', error);
