@@ -4,14 +4,18 @@
 
 ### 🌐 推荐访问地址
 
-1. **官方网站** (推荐): https://www.team.wiki.cn
-   - 国内访问速度最快
-   - 无需科学上网
+1. **Firebase地址** (当前可用): https://team-note-pro.web.app
+   - 全球CDN加速
+   - 稳定可靠
    - 完整功能支持
 
 2. **GitHub Pages** (备用): https://zhuxingxing.github.io/team-note-pro/
    - 相对稳定
    - 可能偶尔访问较慢
+
+3. **计划域名** (配置中): https://www.team.wiki.cn
+   - 详见 `DOMAIN_SETUP_GUIDE.md` 配置指南
+   - 配置完成后将作为主域名使用
 
 3. **本地部署**:
    ```bash
@@ -39,7 +43,7 @@
 
 ### 🚀 快速开始
 
-1. **在线使用**: 直接访问 https://www.team.wiki.cn
+1. **在线使用**: 直接访问 https://team-note-pro.web.app
 2. **本地部署**: 下载代码后用HTTP服务器打开index.html
 3. **团队协作**: 创建团队后邀请成员加入
 

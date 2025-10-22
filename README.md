@@ -5,8 +5,9 @@
 ## 🌐 在线访问
 
 ### 🇨🇳 国内访问推荐
-- **官方网站**: https://www.team.wiki.cn (推荐国内用户使用)
+- **Firebase地址**: https://team-note-pro.web.app (当前可用)
 - **备用链接**: https://zhuxingxing.github.io/team-note-pro/ (GitHub Pages)
+- **计划域名**: https://www.team.wiki.cn (配置中，详见域名配置指南)
 
 ### 🌍 国际访问
 - **Firebase 主应用**: https://team-note-pro.web.app
