@@ -4,7 +4,7 @@
 
 ### 🌐 推荐访问地址
 
-1. **Gitee Pages** (推荐): https://zhuxingxing.gitee.io/team-note-pro/
+1. **官方网站** (推荐): https://www.team.wiki.com
    - 国内访问速度最快
    - 无需科学上网
    - 完整功能支持
@@ -39,7 +39,7 @@
 
 ### 🚀 快速开始
 
-1. **在线使用**: 直接访问 https://zhuxingxing.gitee.io/team-note-pro/
+1. **在线使用**: 直接访问 https://www.team.wiki.com
 2. **本地部署**: 下载代码后用HTTP服务器打开index.html
 3. **团队协作**: 创建团队后邀请成员加入
 

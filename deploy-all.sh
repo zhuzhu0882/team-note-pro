@@ -24,7 +24,7 @@ if ! git diff-index --quiet HEAD --; then
 - 确保国内外用户都能正常访问
 
 🔗 访问链接:
-🇨🇳 国内: https://zhuxingxing.gitee.io/team-note-pro/
+🇨🇳 国内: https://www.team.wiki.com
 🌍 国际: https://team-note-pro.web.app
 
 🤖 Generated with automated deploy script"
@@ -48,7 +48,7 @@ echo ""
 echo "🎉 多平台部署完成！"
 echo ""
 echo "🌐 访问地址:"
-echo "🇨🇳 国内用户: https://zhuxingxing.gitee.io/team-note-pro/"
+echo "🇨🇳 国内用户: https://www.team.wiki.com"
 echo "🌍 国际用户: https://team-note-pro.web.app"
 echo "📱 GitHub Pages: https://zhuxingxing.github.io/team-note-pro/"
 echo ""

@@ -5,7 +5,7 @@
 ## 🌐 在线访问
 
 ### 🇨🇳 国内访问推荐
-- **Gitee Pages**: https://zhuxingxing.gitee.io/team-note-pro/ (推荐国内用户使用)
+- **官方网站**: https://www.team.wiki.com (推荐国内用户使用)
 - **备用链接**: https://zhuxingxing.github.io/team-note-pro/ (GitHub Pages)
 
 ### 🌍 国际访问
