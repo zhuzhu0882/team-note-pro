@@ -4,7 +4,12 @@
 
 ## 🌐 在线访问
 
-- **主应用**: https://team-note-pro.web.app
+### 🇨🇳 国内访问推荐
+- **Gitee Pages**: https://zhuxingxing.gitee.io/team-note-pro/ (推荐国内用户使用)
+- **备用链接**: https://zhuxingxing.github.io/team-note-pro/ (GitHub Pages)
+
+### 🌍 国际访问
+- **Firebase 主应用**: https://team-note-pro.web.app
 - **简化版**: https://team-note-pro.web.app/simple-app.html
 - **诊断工具**: https://team-note-pro.web.app/index-diagnostic.html
 - **索引创建**: https://team-note-pro.web.app/create-index.html
